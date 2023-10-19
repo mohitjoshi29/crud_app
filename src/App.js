@@ -1,20 +1,63 @@
 import logo from './logo.svg';
+import Swal from 'sweetalert2'
 import './App.css';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import "bootstrap"
+import { Modal } from 'bootstrap';
+import * as bootstrap from 'bootstrap';
+window.bootstrap = bootstrap;
+// import 'sweetalert2/src/sweetalert2.scss'
+// import Swal from 'sweetalert2/dist/sweetalert2.js'
+
 
 function App() {
-  var [name, setName] = useState('');
-  var [add, setAdd] = useState('');
-  var [date, setDate] = useState('');
-  var [desc, setDesc] = useState('');
-  var [data, setData] = useState([]);
+  const [name, setName] = useState('');
+  const [add, setAdd] = useState('');
+  const [date, setDate] = useState('');
+  const [desc, setDesc] = useState('');
+  const [data, setData] = useState([]);
 
-  var [selectedId, setSelectedId] = useState(null);
-  var [isUpdate, setIsUpdate] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [isUpdate, setIsUpdate] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemPerPage = 5
+  let getpageno = Math.ceil(data.length / itemPerPage)
 
-  var getData = () => {
+  let PageNumber = [];
+  if (getpageno !== 0) {
+    for (let i = 0; i < getpageno; i++) {
+      PageNumber.push(i + 1);
+    }
+  }
+  let handleClick = (page) => {
+    setCurrentPage(page);
+  }
+  let prevClick = (page) => {
+    setCurrentPage(currentPage - 1);
+  }
+  let NextClick = (page) => {
+    setCurrentPage(currentPage + 1);
+  }
+  let searchData=(e)=>{
+    let c=e.target.value;
+    setQuery(e.target.value);
+    console.log(e.target.value);
+    data.filter((item,index)=>{
+      // debugger
+      // console.log(item.name,index,);
+
+      if(item.name===c){
+        // return true;
+          debugger
+        //   console.log(item.name);
+        }
+        return item.name;
+      })
+    }
+
+  let getData = () => {
     axios.get('http://127.0.0.1:8000/api/companies/').then((res) => {
       setData(res.data);
     })
@@ -24,7 +67,7 @@ function App() {
   }, [])
 
 
-  var Submit_Data = (e) => {
+  let Submit_Data = (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append('name', name);
@@ -32,6 +75,7 @@ function App() {
     formData.append('headquarters_location', add);
     formData.append('description', desc);
 
+    // 
     if (isUpdate && selectedId) {
       axios.put(`http://127.0.0.1:8000/api/companies/${selectedId}/`, formData).then((res) => {
         getData();
@@ -39,35 +83,69 @@ function App() {
         setIsUpdate(false);
         setSelectedId(null);
       });
+      successAlert();
     } else {
       axios.post('http://127.0.0.1:8000/api/companies/', formData).then((res) => {
         getData();
         reset_Data();
       })
+      successAlert();
     }
   }
-    var reset_Data = () => {
-      setName('');
-      setAdd('');
-      setDate('');
-      setDesc('');
-    }
-    var delete_Data = (id) => {
-      axios.delete(`http://127.0.0.1:8000/api/companies/${id}/`).then((res) => {
-        getData();
-      })
-    }
-    var update_Data = (id) => {
-      setSelectedId(id);
-      setIsUpdate(true);
-      // Fetch the data for the selected ID here and set the state variables to populate the form fields.
-      // For example:
-      const selectedCompany = data.find((item) => item.id === id);
-      setName(selectedCompany.name);
-      setDate(selectedCompany.founded_date);
-      setAdd(selectedCompany.headquarters_location);
-      setDesc(selectedCompany.description);
+  let reset_Data = () => {
+    setName('');
+    setAdd('');
+    setDate('');
+    setDesc('');
   }
+  let delete_Data = (id) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        axios.delete(`http://127.0.0.1:8000/api/companies/${id}/`).then((res) => {
+          Swal.fire(
+            'Deleted!',
+            'Your file has been deleted.',
+            'success'
+          )
+          getData();
+        })
+      }
+    })
+
+  }
+  let update_Data = (data1) => {
+    setSelectedId(data1.id);
+    setIsUpdate(true);
+    // // Fetch the data for the selected ID here and set the state letiables to populate the form fields.
+    // // For example:
+    const data2 = data.find((item) => item.id === data1.id);
+    setName(data2.name);
+    setDate(data2.founded_date);
+    setAdd(data2.headquarters_location);
+    setDesc(data2.description);
+
+    let myModal = new bootstrap.Modal(document.getElementById('exampleModal'));
+    // debugger
+    // const modal = Modal.getOrCreateInstance(myModal);
+    myModal.show();
+
+  }
+  let successAlert = () => {
+    Swal.fire(
+      'Successfully',
+      'Your Data Inserted!',
+      'success'
+    )
+  }
+
   return (
     <>
       <div className='container-fluid'>
@@ -122,7 +200,7 @@ function App() {
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" >Close</button>
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onClick={Submit_Data}>Save changes</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onClick={Submit_Data}>{isUpdate ? 'update changes' : 'Save changes'}</button>
                       </div>
                     </div>
                   </div>
@@ -132,6 +210,11 @@ function App() {
           </nav>
         </div>
         {/* header end */}
+        <div className='search-btn container'>
+        <input className='form-control border-primary text-primary' type="text" id="site-search" onChange={(e)=>searchData(e)} placeholder='Search Data by Company Name'/>
+        <hr className='hr hr-primary'/>
+        </div>
+        {/* table data show start */}
         <div className='container' id='show-data'>
           <table className='table table-striped'>
             <thead>
@@ -145,26 +228,41 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {data.map((item, index) => {
+              {data.slice((currentPage - 1) * itemPerPage, currentPage * itemPerPage).map((item, index) => {
+                let getIndex = (currentPage - 1) * itemPerPage + index + 1
                 return (
                   <tr key={index}>
-                    <td>{index}</td>
+                    <td>{getIndex}</td>
                     <td>{item.name}</td>
                     <td>{item.founded_date}</td>
                     <td>{item.headquarters_location}</td>
                     <td>{item.description}</td>
                     <td>
                       <button className='btn btn-danger' onClick={() => delete_Data(item.id)}>Delete</button>
-                      <button className='btn btn-success' style={{ marginLeft: '10px' }} onClick={() => { update_Data(item.id) }}>Update</button>
+                      <button className='btn btn-success' style={{ marginLeft: '10px' }} onClick={() => { update_Data(item) }}>Update</button>
                     </td>
                   </tr>
                 )
-
               })
               }
             </tbody>
           </table>
         </div>
+        {/* table data show start */}
+
+        {/* pagination */}
+        <div className='pagination justify-content-center border-primary'>
+          <button className='btn btn-primary' key={Number} id='Number' onClick={() => prevClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == 1 ? true : false}>  prev</button>
+          {PageNumber.map((Number) => {
+            return (
+              <button className='btn btn-primary' key={Number} id='Number' onClick={() => handleClick(Number)} style={{ marginLeft: '2px' }}>{Number}</button>
+            )
+          }
+          )}
+          <button className='btn btn-primary' key={Number} id='Number' onClick={() => NextClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == getpageno ? true : false}>Next</button>
+        </div>
+        {/* pagination end */}
+
       </div >
     </>
   );
