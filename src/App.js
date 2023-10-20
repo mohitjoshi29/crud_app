@@ -17,13 +17,17 @@ function App() {
   const [date, setDate] = useState('');
   const [desc, setDesc] = useState('');
   const [data, setData] = useState([]);
+  const [filteredData, setFilterdData] = useState([]);
+  const [searchState, setSearchState] = useState(false);
 
   const [selectedId, setSelectedId] = useState(null);
   const [isUpdate, setIsUpdate] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemPerPage = 5
-  let getpageno = Math.ceil(data.length / itemPerPage)
+  let getpageno = searchState ? Math.ceil(filteredData.length / itemPerPage) : Math.ceil(data.length / itemPerPage)
 
   let PageNumber = [];
   if (getpageno !== 0) {
@@ -40,22 +44,23 @@ function App() {
   let NextClick = (page) => {
     setCurrentPage(currentPage + 1);
   }
-  let searchData=(e)=>{
-    let c=e.target.value;
-    setQuery(e.target.value);
-    console.log(e.target.value);
-    data.filter((item,index)=>{
-      // debugger
-      // console.log(item.name,index,);
 
-      if(item.name===c){
-        // return true;
-          debugger
-        //   console.log(item.name);
+
+  const searchData = (e) => {
+    setSearchQuery(e.target.value);
+    if (e.target.value !== "") {
+      setSearchState(true)
+      let filterData = data.filter((item) => {
+        if (item.name.toString().toLowerCase().includes(e.target.value.toString().toLowerCase())) {
+          return item;
         }
-        return item.name;
       })
+      setFilterdData(filterData);
     }
+    else {
+      setSearchState(false)
+    }
+  }
 
   let getData = () => {
     axios.get('http://127.0.0.1:8000/api/companies/').then((res) => {
@@ -211,8 +216,8 @@ function App() {
         </div>
         {/* header end */}
         <div className='search-btn container'>
-        <input className='form-control border-primary text-primary' type="text" id="site-search" onChange={(e)=>searchData(e)} placeholder='Search Data by Company Name'/>
-        <hr className='hr hr-primary'/>
+          <input className='form-control border-primary text-primary' type="text" id="site-search" onChange={searchData} placeholder='Search Data by Company Name' />
+          <hr className='hr hr-primary' />
         </div>
         {/* table data show start */}
         <div className='container' id='show-data'>
@@ -228,22 +233,41 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {data.slice((currentPage - 1) * itemPerPage, currentPage * itemPerPage).map((item, index) => {
-                let getIndex = (currentPage - 1) * itemPerPage + index + 1
-                return (
-                  <tr key={index}>
-                    <td>{getIndex}</td>
-                    <td>{item.name}</td>
-                    <td>{item.founded_date}</td>
-                    <td>{item.headquarters_location}</td>
-                    <td>{item.description}</td>
-                    <td>
-                      <button className='btn btn-danger' onClick={() => delete_Data(item.id)}>Delete</button>
-                      <button className='btn btn-success' style={{ marginLeft: '10px' }} onClick={() => { update_Data(item) }}>Update</button>
-                    </td>
-                  </tr>
-                )
-              })
+              {
+                searchState
+                  ? filteredData.map((data, i) => {
+                    let getIndex = i
+                    return (
+                      <tr key={i}>
+                        <td>{getIndex}</td>
+                        <td>{data.name}</td>
+                        <td>{data.founded_date}</td>
+                        <td>{data.headquarters_location}</td>
+                        <td>{data.description}</td>
+                        <td>
+                          <button className='btn btn-danger' onClick={() => delete_Data(data.id)}>Delete</button>
+                          <button className='btn btn-success' style={{ marginLeft: '10px' }} onClick={() => { update_Data(data) }}>Update</button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                  :
+                  data.slice((currentPage - 1) * itemPerPage, currentPage * itemPerPage).map((item, index) => {
+                    let getIndex = (currentPage - 1) * itemPerPage + index + 1
+                    return (
+                      <tr key={index}>
+                        <td>{getIndex}</td>
+                        <td>{item.name}</td>
+                        <td>{item.founded_date}</td>
+                        <td>{item.headquarters_location}</td>
+                        <td>{item.description}</td>
+                        <td>
+                          <button className='btn btn-danger' onClick={() => delete_Data(item.id)}>Delete</button>
+                          <button className='btn btn-success' style={{ marginLeft: '10px' }} onClick={() => { update_Data(item) }}>Update</button>
+                        </td>
+                      </tr>
+                    )
+                  })
               }
             </tbody>
           </table>
@@ -251,16 +275,21 @@ function App() {
         {/* table data show start */}
 
         {/* pagination */}
-        <div className='pagination justify-content-center border-primary'>
-          <button className='btn btn-primary' key={Number} id='Number' onClick={() => prevClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == 1 ? true : false}>  prev</button>
-          {PageNumber.map((Number) => {
-            return (
-              <button className='btn btn-primary' key={Number} id='Number' onClick={() => handleClick(Number)} style={{ marginLeft: '2px' }}>{Number}</button>
-            )
-          }
-          )}
-          <button className='btn btn-primary' key={Number} id='Number' onClick={() => NextClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == getpageno ? true : false}>Next</button>
-        </div>
+        {
+          getpageno > 1
+            ? <div className='pagination justify-content-center border-primary'>
+              <button className='btn btn-primary' key={Number} id='Number' onClick={() => prevClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == 1 ? true : false}>  prev</button>
+              {PageNumber.map((Number) => {
+                return (
+                  <button className='btn btn-primary' key={Number} id='Number' onClick={() => handleClick(Number)} style={{ marginLeft: '2px' }}>{Number}</button>
+                )
+              }
+              )}
+              <button className='btn btn-primary' key={Number} id='Number' onClick={() => NextClick(Number)} style={{ marginLeft: '2px' }} disabled={currentPage == getpageno ? true : false}>Next</button>
+            </div>
+            : null
+
+        }
         {/* pagination end */}
 
       </div >
